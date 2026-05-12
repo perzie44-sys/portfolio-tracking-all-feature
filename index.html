@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Terminal</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<style>
+:root {
+  --bg:#060a10; --s1:#0c1118; --s2:#111820; --s3:#161e28;
+  --b1:#1e2a38; --b2:#253345; --b3:#2e3f52;
+  --accent:#00d4ff; --green:#00e676; --red:#ff4757;
+  --sp:#fbbf24; --nd:#a78bfa; --accent2:#7c3aed;
+  --text:#e8f4ff; --muted:#4a6580; --muted2:#6b85a0;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.04) 3px,rgba(0,0,0,.04) 4px);pointer-events:none;z-index:1000;}
+.grid-bg{position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.018) 1px,transparent 1px);background-size:50px 50px;pointer-events:none;z-index:0;}
+.wrap{max-width:1400px;margin:0 auto;padding:0 20px;position:relative;z-index:2;}
+
+/* NAV */
+nav{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(–b1);margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+.nav-brand{display:flex;align-items:center;gap:10px;}
+.nav-logo{width:30px;height:30px;background:linear-gradient(135deg,var(–accent),var(–accent2));border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(–mono);font-size:11px;font-weight:700;color:#fff;}
+.nav-name{font-size:15px;font-weight:800;letter-spacing:-.3px;}
+.nav-sub{font-family:var(–mono);font-size:7.5px;color:var(–muted);letter-spacing:3px;text-transform:uppercase;}
+.nav-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.pill{display:flex;align-items:center;gap:5px;background:var(–s1);border:1px solid var(–b1);border-radius:20px;padding:4px 10px;font-family:var(–mono);font-size:8.5px;color:var(–muted);letter-spacing:1px;}
+.dot{width:5px;height:5px;border-radius:50%;background:var(–green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,230,118,.5)}50%{opacity:.5;box-shadow:0 0 0 5px rgba(0,230,118,0)}}
+.dot.orange{background:#f59e0b;}
+.dot.red{background:var(–red);}
+
+/* TABS */
+.tabs{display:flex;gap:2px;background:var(–s1);border:1px solid var(–b1);border-radius:8px;padding:3px;margin-bottom:18px;overflow-x:auto;}
+.tab{font-family:var(–mono);font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;padding:6px 14px;border-radius:5px;border:none;background:transparent;color:var(–muted);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.tab.on{background:var(–s3);color:var(–accent);border:1px solid var(–b2);}
+.tab:hover:not(.on){color:var(–text);}
+
+/* PANEL */
+.panel{background:var(–s1);border:1px solid var(–b1);border-radius:12px;padding:18px 20px;margin-bottom:14px;position:relative;overflow:hidden;}
+.panel::before{content:’’;position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,255,.25),transparent);}
+.ph{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.pt{font-size:12px;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:7px;}
+.pt::before{content:’’;display:inline-block;width:3px;height:13px;background:var(–accent);border-radius:2px;}
+
+/* CARDS */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:14px;}
+.card{background:var(–s2);border:1px solid var(–b1);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden;transition:all .2s;}
+.card:hover{border-color:var(–b3);transform:translateY(-1px);}
+.card::after{content:’’;position:absolute;bottom:0;left:0;right:0;height:2px;background:var(–cc,var(–accent));}
+.clbl{font-family:var(–mono);font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(–muted);margin-bottom:7px;}
+.cval{font-family:var(–mono);font-size:21px;font-weight:700;line-height:1;}
+.csub{font-family:var(–mono);font-size:8.5px;color:var(–muted);margin-top:4px;}
+.up{color:var(–green);} .down{color:var(–red);} .neu{color:var(–muted);}
+
+/* CHART */
+.chart-wrap{position:relative;height:300px;}
+.cover{position:absolute;inset:0;background:rgba(6,10,16,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-radius:8px;z-index:5;}
+.cover.hide{display:none;}
+.spin{width:26px;height:26px;border:2px solid var(–b2);border-top-color:var(–accent);border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ctxt{font-family:var(–mono);font-size:9px;color:var(–muted);letter-spacing:2px;text-align:center;padding:0 20px;}
+.retry-btn{font-family:var(–mono);font-size:9px;padding:5px 12px;border-radius:5px;border:1px solid var(–b2);background:var(–s3);color:var(–muted2);cursor:pointer;margin-top:4px;}
+.retry-btn:hover{color:var(–accent);border-color:var(–accent);}
+
+/* RANGE */
+.rbg{display:flex;gap:3px;}
+.rb{font-family:var(–mono);font-size:8.5px;letter-spacing:1px;padding:4px 9px;border-radius:5px;border:1px solid var(–b1);background:transparent;color:var(–muted);cursor:pointer;transition:all .2s;}
+.rb.on{background:var(–s3);color:var(–accent);border-color:var(–b2);}
+.rb:hover:not(.on){color:var(–text);}
+
+/* TABLE */
+.tw{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:11.5px;}
+thead th{font-family:var(–mono);font-size:7.5px;letter-spacing:2px;text-transform:uppercase;color:var(–muted);text-align:right;padding:7px 9px 11px;border-bottom:1px solid var(–b1);white-space:nowrap;}
+thead th:first-child{text-align:left;}
+tbody tr{border-bottom:1px solid rgba(30,42,56,.45);transition:background .12s;}
+tbody tr:hover{background:var(–s2);}
+tbody td{padding:9px;text-align:right;font-family:var(–mono);white-space:nowrap;vertical-align:middle;}
+tbody td:first-child{text-align:left;}
+.tkr{display:inline-block;background:var(–s3);border:1px solid var(–b2);border-radius:4px;padding:2px 6px;font-weight:700;color:var(–accent);font-size:10.5px;min-width:46px;text-align:center;}
+.sn{font-size:8.5px;color:var(–muted);margin-top:1px;}
+.chip{display:inline-flex;align-items:center;gap:2px;font-family:var(–mono);font-size:8px;padding:1px 5px;border-radius:3px;font-weight:700;}
+.chip.b{background:rgba(0,230,118,.1);color:var(–green);border:1px solid rgba(0,230,118,.2);}
+.chip.l{background:rgba(255,71,87,.1);color:var(–red);border:1px solid rgba(255,71,87,.2);}
+
+/* FORMS */
+.fr{display:grid;grid-template-columns:1.2fr 1.2fr 1fr 1fr auto;gap:8px;align-items:end;}
+@media(max-width:780px){.fr{grid-template-columns:1fr 1fr;}}
+@media(max-width:460px){.fr{grid-template-columns:1fr;}}
+.fg{display:flex;flex-direction:column;gap:4px;}
+.fl{font-family:var(–mono);font-size:7.5px;letter-spacing:2.5px;text-transform:uppercase;color:var(–muted);}
+.fi{background:var(–bg);border:1px solid var(–b1);border-radius:6px;padding:7px 10px;color:var(–text);font-family:var(–mono);font-size:11px;outline:none;transition:border-color .2s;width:100%;}
+.fi:focus{border-color:var(–accent);}
+.fi::placeholder{color:var(–muted);}
+select.fi{cursor:pointer;}
+.dca-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;}
+.err{font-family:var(–mono);font-size:8.5px;color:var(–red);margin-top:5px;min-height:12px;}
+
+/* BUTTONS */
+.btn{border:none;border-radius:6px;padding:7px 14px;font-family:‘Syne’,sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.btn-p{background:var(–accent);color:#060a10;}
+.btn-p:hover{opacity:.85;}
+.btn-p:disabled{opacity:.4;cursor:not-allowed;}
+.btn-s{background:var(–s3);color:var(–text);border:1px solid var(–b2);}
+.btn-s:hover{border-color:var(–accent);color:var(–accent);}
+.btn-d{background:rgba(255,71,87,.1);color:var(–red);border:1px solid rgba(255,71,87,.18);padding:3px 7px;font-size:10px;}
+.btn-d:hover{background:rgba(255,71,87,.2);}
+
+/* DCA */
+.scen-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+@media(max-width:560px){.scen-grid{grid-template-columns:1fr;}}
+.scen{background:var(–s3);border:1px solid var(–b2);border-radius:8px;padding:12px;text-align:center;}
+.scen-lbl{font-family:var(–mono);font-size:8px;color:var(–muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px;}
+.scen-val{font-family:var(–mono);font-size:19px;font-weight:700;}
+.scen-sub{font-family:var(–mono);font-size:8.5px;color:var(–muted2);margin-top:3px;}
+.dca-chart-wrap{height:240px;position:relative;}
+
+/* BT */
+.bt-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
+.bt-stat{background:var(–s2);border:1px solid var(–b1);border-radius:8px;padding:12px;}
+.bt-lbl{font-family:var(–mono);font-size:7.5px;letter-spacing:2px;text-transform:uppercase;color:var(–muted);margin-bottom:5px;}
+.bt-val{font-family:var(–mono);font-size:17px;font-weight:700;}
+.bt-sub{font-family:var(–mono);font-size:8px;color:var(–muted2);margin-top:3px;}
+
+/* SYNC */
+.sync-url{font-family:var(–mono);font-size:9.5px;color:var(–muted2);word-break:break-all;background:var(–bg);border:1px solid var(–b1);border-radius:6px;padding:10px;margin:8px 0;max-height:64px;overflow-y:auto;line-height:1.5;}
+.sync-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:12px;}
+.sync-card{background:var(–s2);border:1px solid var(–b1);border-radius:8px;padding:14px;}
+.sync-title{font-size:12px;font-weight:700;margin-bottom:4px;}
+.sync-desc{font-family:var(–mono);font-size:8.5px;color:var(–muted);line-height:1.6;}
+.legend{display:flex;gap:12px;flex-wrap:wrap;}
+.leg{display:flex;align-items:center;gap:5px;font-family:var(–mono);font-size:8.5px;color:var(–muted2);}
+.legline{width:14px;height:2px;border-radius:1px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:var(–s2);border:1px solid var(–b2);border-radius:8px;padding:10px 16px;font-family:var(–mono);font-size:10px;z-index:9999;transform:translateY(60px);opacity:0;transition:all .3s;pointer-events:none;max-width:280px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.ok{border-color:var(–green);color:var(–green);}
+.toast.err{border-color:var(–red);color:var(–red);}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(–bg);}
+::-webkit-scrollbar-thumb{background:var(–b2);border-radius:2px;}
+@media(max-width:600px){.cards{grid-template-columns:1fr 1fr;}}
+</style>
+
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="wrap">
+
+<!-- NAV -->
+
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">PT</div>
+    <div>
+      <div class="nav-name">Portfolio Terminal</div>
+      <div class="nav-sub">Polygon · Finnhub</div>
+    </div>
+  </div>
+  <div class="nav-r">
+    <div class="pill" id="apiStatus"><span class="dot" id="apiDot"></span><span id="apiTxt">Connecting…</span></div>
+    <button class="btn btn-s" style="font-size:10px;padding:5px 11px;" onclick="refreshAll()">↻ Refresh</button>
+  </div>
+</nav>
+
+<!-- TABS -->
+
+<div class="tabs">
+  <button class="tab on"  onclick="showTab('dashboard',this)">◈ Dashboard</button>
+  <button class="tab"     onclick="showTab('backtest',this)">⟳ Backtest</button>
+  <button class="tab"     onclick="showTab('dca',this)">∑ DCA Planner</button>
+  <button class="tab"     onclick="showTab('assets',this)">✦ Assets</button>
+  <button class="tab"     onclick="showTab('sync',this)">⇄ Sync</button>
+</div>
+
+<!-- ══════════ DASHBOARD ══════════ -->
+
+<div id="tab-dashboard">
+  <div class="cards">
+    <div class="card" style="--cc:var(--accent)">
+      <div class="clbl">Total Equity</div>
+      <div class="cval" id="cTotal" style="color:var(--accent)">$—</div>
+      <div class="csub" id="cCost">Cost basis: —</div>
+    </div>
+    <div class="card" style="--cc:var(--green)">
+      <div class="clbl">Unrealized P/L</div>
+      <div class="cval" id="cPL">—</div>
+      <div class="csub" id="cPLpct">—</div>
+    </div>
+    <div class="card" style="--cc:var(--sp)">
+      <div class="clbl">SPY Today</div>
+      <div class="cval" id="cSPY" style="color:var(--sp)">—</div>
+      <div class="csub" id="cSPYprice">Fetching…</div>
+    </div>
+    <div class="card" style="--cc:var(--nd)">
+      <div class="clbl">Market Mood</div>
+      <div class="cval" id="cMood">—</div>
+      <div class="csub">SPY daily change</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph">
+      <div class="pt">Performance vs Benchmarks</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <div class="legend">
+          <div class="leg"><div class="legline" style="background:#00d4ff"></div>PORTFOLIO</div>
+          <div class="leg"><div class="legline" style="background:#fbbf24"></div>S&P 500</div>
+          <div class="leg"><div class="legline" style="background:#a78bfa"></div>NASDAQ</div>
+        </div>
+        <div class="rbg">
+          <button class="rb" onclick="setRange(126,this)">6M</button>
+          <button class="rb on" onclick="setRange(252,this)">1Y</button>
+          <button class="rb" onclick="setRange(504,this)">2Y</button>
+        </div>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <div class="cover" id="chartCover">
+        <div class="spin"></div>
+        <div class="ctxt" id="chartMsg">FETCHING POLYGON DATA…</div>
+        <button class="retry-btn" onclick="loadChart()" style="display:none" id="retryBtn">↻ Retry</button>
+      </div>
+      <canvas id="mainChart"></canvas>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph">
+      <div class="pt">Holdings</div>
+      <span id="holdCount" style="font-family:var(--mono);font-size:8.5px;color:var(--muted)">—</span>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr>
+          <th>Asset</th><th>Shares</th><th>Avg Cost</th><th>Live Price</th>
+          <th>Value</th><th>P/L $</th><th>P/L %</th><th>vs SPY</th><th></th>
+        </tr></thead>
+        <tbody id="dashTbl"><tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:10px;">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ BACKTEST ══════════ -->
+
+<div id="tab-backtest" style="display:none">
+  <div class="panel">
+    <div class="ph"><div class="pt">Backtest Configuration</div></div>
+    <div class="fr" style="margin-bottom:10px;">
+      <div class="fg"><div class="fl">Start Date</div><input class="fi" type="date" id="btStart"></div>
+      <div class="fg"><div class="fl">End Date</div><input class="fi" type="date" id="btEnd"></div>
+      <div class="fg"><div class="fl">Capital (USD)</div><input class="fi" type="number" id="btCap" value="1000"></div>
+      <div class="fg"><div class="fl">Strategy</div>
+        <select class="fi" id="btStrat">
+          <option value="equal">Equal Weight</option>
+          <option value="top5">Top 5 Positions</option>
+          <option value="all">All Holdings</option>
+        </select>
+      </div>
+      <button class="btn btn-p" id="btRunBtn" onclick="runBacktest()">▶ Run</button>
+    </div>
+    <div class="err" id="btErr"></div>
+  </div>
+  <div id="btOut" style="display:none">
+    <div class="bt-stat-grid" id="btStats"></div>
+    <div class="panel">
+      <div class="ph"><div class="pt">Portfolio vs Benchmarks</div></div>
+      <div class="chart-wrap"><canvas id="btChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="pt">Per-Stock Performance</div></div>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Ticker</th><th>Start $</th><th>End $</th><th>Return</th><th>vs SPY</th><th>vs QQQ</th></tr></thead>
+          <tbody id="btTbl"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ DCA PLANNER ══════════ -->
+
+<div id="tab-dca" style="display:none">
+  <div class="panel">
+    <div class="ph"><div class="pt">DCA Future Value Calculator</div></div>
+    <div class="dca-grid" style="margin-bottom:10px;">
+      <div class="fg"><div class="fl">Current Value (USD)</div><input class="fi" type="number" id="dcaInit" placeholder="878.59"></div>
+      <div class="fg"><div class="fl">Monthly Add (USD)</div><input class="fi" type="number" id="dcaMo" value="140"></div>
+      <div class="fg"><div class="fl">Annual Return %</div><input class="fi" type="number" id="dcaRate" value="10"></div>
+      <div class="fg"><div class="fl">Years</div><input class="fi" type="number" id="dcaYrs" value="10" min="1" max="40"></div>
+      <div class="fg"><div class="fl">Target (THB)</div><input class="fi" type="number" id="dcaTarget" value="1000000"></div>
+      <div class="fg" style="align-self:end;"><button class="btn btn-p" style="width:100%" onclick="calcDCA()">Calculate</button></div>
+    </div>
+    <div class="err" id="dcaErr"></div>
+  </div>
+  <div id="dcaOut" style="display:none">
+    <div class="scen-grid" id="dcaScen"></div>
+    <div class="panel">
+      <div class="ph">
+        <div class="pt">Growth Projection (THB)</div>
+        <span style="font-family:var(--mono);font-size:8.5px;color:var(--muted)">1 USD = 32.31 THB</span>
+      </div>
+      <div class="dca-chart-wrap"><canvas id="dcaChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="pt">Year-by-Year Breakdown</div></div>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Year</th><th>Contributed</th><th>Interest</th><th>Total (USD)</th><th>Total (THB)</th><th>vs Target</th></tr></thead>
+          <tbody id="dcaTbl"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ ASSETS ══════════ -->
+
+<div id="tab-assets" style="display:none">
+  <div class="panel">
+    <div class="ph"><div class="pt">Add / Update Position</div></div>
+    <div class="fr">
+      <div class="fg"><div class="fl">Ticker</div><input class="fi" id="aT" placeholder="AAPL" style="text-transform:uppercase"></div>
+      <div class="fg"><div class="fl">Name</div><input class="fi" id="aN" placeholder="Apple Inc"></div>
+      <div class="fg"><div class="fl">Shares</div><input class="fi" type="number" id="aS" placeholder="10" step="any"></div>
+      <div class="fg"><div class="fl">Avg Cost (USD)</div><input class="fi" type="number" id="aC" placeholder="150.00" step="any"></div>
+      <button class="btn btn-p" onclick="addAsset()">+ Add</button>
+    </div>
+    <div class="err" id="assetErr"></div>
+  </div>
+  <div class="panel">
+    <div class="ph">
+      <div class="pt">All Positions</div>
+      <button class="btn btn-d" onclick="clearAll()">Clear All</button>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Asset</th><th>Shares</th><th>Avg Cost</th><th>Cost Basis</th><th>Weight</th><th></th></tr></thead>
+        <tbody id="assetTbl"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SYNC ══════════ -->
+
+<div id="tab-sync" style="display:none">
+  <div class="panel">
+    <div class="ph"><div class="pt">Generate Sync URL</div></div>
+    <p style="font-family:var(--mono);font-size:9.5px;color:var(--muted2);line-height:1.7;margin-bottom:12px;">Your portfolio is Base64-encoded into a URL. Open it on any device — no account, no server needed.</p>
+    <button class="btn btn-p" onclick="genURL()">⇄ Generate URL</button>
+    <div id="urlBox" style="display:none;margin-top:10px;">
+      <div class="sync-url" id="syncURL"></div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn btn-s" onclick="copyURL()">📋 Copy</button>
+        <button class="btn btn-s" onclick="shareURL()">↗ Share</button>
+        <button class="btn btn-s" onclick="showQR()">QR Code</button>
+      </div>
+      <div id="qrBox" style="display:none;margin-top:12px;"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ph"><div class="pt">Import from URL</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <input class="fi" id="importInput" placeholder="Paste sync URL here…" style="flex:1;min-width:180px;">
+      <button class="btn btn-p" onclick="importURL()">Import</button>
+    </div>
+    <div class="err" id="importErr"></div>
+  </div>
+  <div class="sync-grid">
+    <div class="sync-card"><div class="sync-title">📱 Mobile</div><div class="sync-desc">Generate URL → open on phone → bookmark. Portfolio auto-loads from URL params.</div></div>
+    <div class="sync-card"><div class="sync-title">💻 Multi-Device</div><div class="sync-desc">Save URL in Notes/email. Re-generate after every edit to get an updated link.</div></div>
+    <div class="sync-card"><div class="sync-title">🔄 Auto Reload</div><div class="sync-desc">Data is stored in localStorage per browser too — reopening the same browser restores last state automatically.</div></div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════
+const POLY  = 'opKU4hpKgdSaQQQWLYXqFYFzzODVPf0f';
+const FIN   = 'd819jdhr01qler4hgci0d819jdhr01qler4hgcig';
+const USDTHB = 32.31;
+
+// Polygon CORS proxy — tries direct first, falls back to allorigins
+async function polyGet(path) {
+  const base = `https://api.polygon.io${path}`;
+  // Try direct first (works when served over HTTPS or from some environments)
+  try {
+    const r = await fetch(base, { signal: AbortSignal.timeout(8000) });
+    if (r.ok) {
+      const j = await r.json();
+      if (j.status === 'OK' || j.resultsCount > 0 || j.results) return j;
+    }
+  } catch(_) {}
+  // Fallback: corsproxy.io
+  try {
+    const r2 = await fetch(`https://corsproxy.io/?${encodeURIComponent(base)}`, { signal: AbortSignal.timeout(10000) });
+    if (r2.ok) {
+      const j2 = await r2.json();
+      if (j2.status === 'OK' || j2.results) return j2;
+    }
+  } catch(_) {}
+  // Fallback 2: allorigins
+  const r3 = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(base)}`, { signal: AbortSignal.timeout(12000) });
+  if (!r3.ok) throw new Error('All proxies failed for Polygon');
+  return r3.json();
+}
+
+async function polyAggs(symbol, from, to) {
+  const path = `/v2/aggs/ticker/${symbol}/range/1/day/${from}/${to}?adjusted=true&sort=asc&limit=730&apiKey=${POLY}`;
+  const j = await polyGet(path);
+  if (!j.results || !j.results.length) throw new Error(`No data for ${symbol}`);
+  return j.results;
+}
+
+async function finnQuote(symbol) {
+  const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FIN}`, { signal: AbortSignal.timeout(8000) });
+  if (!r.ok) throw new Error('Finnhub error');
+  return r.json();
+}
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let portfolio = JSON.parse(localStorage.getItem('ptf_v5') || 'null') || [
+  {t:'GOOGL',n:'Alphabet',   q:1,  c:86.40},
+  {t:'NVDA', n:'NVIDIA',     q:1,  c:77.10},
+  {t:'AMZN', n:'Amazon',     q:1,  c:76.42},
+  {t:'ASML', n:'ASML',       q:1,  c:60.68},
+  {t:'PLTR', n:'Palantir',   q:1,  c:53.21},
+  {t:'TSM',  n:'TSMC',       q:1,  c:31.04},
+  {t:'MSFT', n:'Microsoft',  q:1,  c:39.31},
+  {t:'COST', n:'Costco',     q:1,  c:32.66},
+  {t:'META', n:'Meta',       q:1,  c:32.92},
+  {t:'JPM',  n:'JPMorgan',   q:1,  c:25.91},
+  {t:'WM',   n:'Waste Mgmt', q:1,  c:26.02},
+  {t:'UBER', n:'Uber',       q:1,  c:25.06},
+  {t:'ABBV', n:'AbbVie',     q:1,  c:22.27},
+  {t:'RBRK', n:'Rubrik',     q:1,  c:23.46},
+  {t:'AVGO', n:'Broadcom',   q:1,  c:428.00},
+];
+
+// Load from URL param if present
+(() => {
+  try {
+    const p = new URLSearchParams(location.search).get('p');
+    if (p) { portfolio = JSON.parse(atob(p)); save(); toast('Portfolio loaded from URL ✓','ok'); }
+  } catch(_) {}
+})();
+
+let quotes    = {};
+let chartCache = { labels:[], spy:[], qqq:[], proxy:[] };
+let mainChartObj = null, btChartObj = null, dcaChartObj = null;
+let spyDP = 0;
+
+function save() { localStorage.setItem('ptf_v5', JSON.stringify(portfolio)); }
+const f2   = n => (+n||0).toFixed(2);
+const fUSD = n => '$' + Math.abs(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fTHB = n => '฿' + Math.abs(+n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+const fPct = n => (n>=0?'+':'-') + Math.abs(+n||0).toFixed(2) + '%';
+const sign = n => n >= 0 ? '+' : '-';
+
+function setStatus(txt, color='') {
+  document.getElementById('apiTxt').textContent = txt;
+  const d = document.getElementById('apiDot');
+  d.className = 'dot' + (color?' '+color:'');
+}
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+let toastTimer;
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = 'toast', 3200);
+}
+
+// ═══════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════
+function showTab(id, btn) {
+  ['dashboard','backtest','dca','assets','sync'].forEach(t =>
+    document.getElementById('tab-'+t).style.display = t===id ? 'block' : 'none'
+  );
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+}
+
+// ═══════════════════════════════════════════
+// DASHBOARD — LIVE QUOTES (Finnhub)
+// ═══════════════════════════════════════════
+async function loadDashboard() {
+  setStatus('Loading quotes…', 'orange');
+  let totalVal=0, totalCost=0, html='';
+
+  // SPY first for sentiment
+  try {
+    const sq = await finnQuote('SPY');
+    quotes['SPY'] = sq; spyDP = sq.dp || 0;
+    document.getElementById('cSPY').textContent    = fPct(spyDP);
+    document.getElementById('cSPY').className      = 'cval ' + (spyDP>=0?'up':'down');
+    document.getElementById('cSPYprice').textContent = 'Price: ' + fUSD(sq.c);
+    document.getElementById('cMood').textContent   = spyDP>=1?'Bullish 🐂':spyDP<=-1?'Bearish 🐻':'Neutral ↔';
+    document.getElementById('cMood').className     = 'cval ' + (spyDP>=0?'up':'down');
+  } catch(e) { setStatus('Finnhub error','red'); }
+
+  // Load each stock
+  for (const h of portfolio) {
+    try {
+      const q = await finnQuote(h.t);
+      quotes[h.t] = q;
+      const price = q.c || h.c;
+      const val   = price * h.q;
+      const cost  = h.c   * h.q;
+      const pl    = val - cost;
+      const plp   = (pl/cost)*100;
+      const vs    = (q.dp||0) - spyDP;
+      totalVal  += val; totalCost += cost;
+      html += `<tr>
+        <td><div class="tkr">${h.t}</div><div class="sn">${h.n||''}</div></td>
+        <td>${h.q%1===0?h.q:h.q.toFixed(4)}</td>
+        <td>${fUSD(h.c)}</td>
+        <td>${fUSD(price)}</td>
+        <td style="font-weight:700">${fUSD(val)}</td>
+        <td class="${pl>=0?'up':'down'}">${sign(pl)}${fUSD(pl)}</td>
+        <td class="${plp>=0?'up':'down'}">${fPct(plp)}</td>
+        <td><span class="chip ${vs>=0?'b':'l'}">${vs>=0?'▲':'▼'} ${Math.abs(vs).toFixed(2)}%</span></td>
+        <td><button class="btn btn-d" onclick="removeAsset('${h.t}')">✕</button></td>
+      </tr>`;
+    } catch(e) {
+      html += `<tr><td><div class="tkr">${h.t}</div></td>
+        <td colspan="8" style="color:var(--muted);font-size:9px;text-align:right;">Quote unavailable</td></tr>`;
+    }
+  }
+
+  document.getElementById('dashTbl').innerHTML = html || '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:10px;">No positions</td></tr>';
+  document.getElementById('holdCount').textContent = portfolio.length + ' positions';
+
+  const pl   = totalVal - totalCost;
+  const plp  = totalCost > 0 ? (pl/totalCost)*100 : 0;
+  document.getElementById('cTotal').textContent   = fUSD(totalVal);
+  document.getElementById('cCost').textContent    = 'Cost basis: ' + fUSD(totalCost);
+  document.getElementById('cPL').textContent      = sign(pl) + fUSD(pl);
+  document.getElementById('cPL').className        = 'cval ' + (pl>=0?'up':'down');
+  document.getElementById('cPLpct').textContent   = fPct(plp);
+  document.getElementById('dcaInit').value        = f2(totalVal);
+
+  setStatus('Synced ' + new Date().toLocaleTimeString());
+}
+
+// ═══════════════════════════════════════════
+// CHART — HISTORICAL (Polygon)
+// ═══════════════════════════════════════════
+function getDateRange(days=504) {
+  const to   = new Date();
+  const from = new Date(Date.now() - days * 1.5 * 86400000); // extra buffer for weekends
+  return {
+    from: from.toISOString().split('T')[0],
+    to:   to.toISOString().split('T')[0]
+  };
+}
+
+async function loadChart() {
+  const cover = document.getElementById('chartCover');
+  const msg   = document.getElementById('chartMsg');
+  const retry = document.getElementById('retryBtn');
+  cover.classList.remove('hide');
+  retry.style.display = 'none';
+  msg.textContent = 'FETCHING POLYGON DATA…';
+
+  try {
+    const { from, to } = getDateRange(504); // 2 years buffer
+    const proxy = portfolio.length ? portfolio[0].t : 'AAPL';
+    msg.textContent = 'LOADING SPY…';
+    const [spyD, qqqD, proxyD] = await Promise.all([
+      polyAggs('SPY',  from, to),
+      polyAggs('QQQ',  from, to),
+      polyAggs(proxy,  from, to),
+    ]);
+    chartCache.labels = spyD.map(d => new Date(d.t).toLocaleDateString('en-US',{month:'short',year:'2-digit'}));
+    chartCache.spy    = spyD.map(d => d.c);
+    chartCache.qqq    = qqqD.map(d => d.c);
+    chartCache.proxy  = proxyD.map(d => d.c);
+    cover.classList.add('hide');
+    setRange(252, document.querySelector('.rb.on'));
+    toast('Chart loaded ✓','ok');
+  } catch(e) {
+    msg.textContent = 'POLYGON ERROR: ' + e.message.substring(0,60);
+    retry.style.display = 'block';
+    toast('Chart load failed — try Retry','err');
+  }
+}
+
+function norm(arr, n) {
+  const s = arr.slice(-n);
+  const b = s[0] || 1;
+  return s.map(p => ((p-b)/b)*100);
+}
+
+function setRange(days, btn) {
+  if (btn) { document.querySelectorAll('.rb').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); }
+  if (!chartCache.spy.length) return;
+  const labels = chartCache.labels.slice(-days);
+  const ctx    = document.getElementById('mainChart').getContext('2d');
+  if (mainChartObj) mainChartObj.destroy();
+  mainChartObj = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets:[
+      {label:'Portfolio',   data:norm(chartCache.proxy,days),borderColor:'#00d4ff',borderWidth:2.5,pointRadius:0,tension:.3,fill:{target:'origin',above:'rgba(0,212,255,.07)'}},
+      {label:'S&P 500 SPY',data:norm(chartCache.spy,  days),borderColor:'#fbbf24',borderWidth:1.5,pointRadius:0,tension:.3,borderDash:[6,3]},
+      {label:'Nasdaq QQQ', data:norm(chartCache.qqq,  days),borderColor:'#a78bfa',borderWidth:1.5,pointRadius:0,tension:.3,borderDash:[6,3]},
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:'#0c1118',borderColor:'#1e2a38',borderWidth:1,
+          titleFont:{family:'JetBrains Mono',size:8},bodyFont:{family:'JetBrains Mono',size:9},
+          callbacks:{label:c=>`  ${c.dataset.label}: ${c.parsed.y>=0?'+':''}${c.parsed.y.toFixed(2)}%`}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#4a6580',font:{family:'JetBrains Mono',size:8},maxTicksLimit:9}},
+        y:{grid:{color:'rgba(30,42,56,.7)'},ticks:{color:'#4a6580',font:{family:'JetBrains Mono',size:8},callback:v=>(v>=0?'+':'')+v.toFixed(1)+'%'}}
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════
+// BACKTEST (Polygon)
+// ═══════════════════════════════════════════
+async function runBacktest() {
+  const start  = document.getElementById('btStart').value;
+  const end    = document.getElementById('btEnd').value;
+  const cap    = parseFloat(document.getElementById('btCap').value) || 1000;
+  const strat  = document.getElementById('btStrat').value;
+  const err    = document.getElementById('btErr');
+  err.textContent = '';
+
+  if (!start || !end || start >= end) { err.textContent='Enter valid start/end dates.'; return; }
+
+  const btn = document.getElementById('btRunBtn');
+  btn.disabled = true; btn.textContent = 'Running…';
+  document.getElementById('btOut').style.display = 'none';
+  toast('Fetching Polygon backtest data…');
+
+  try {
+    let tickers = portfolio.map(h=>h.t);
+    if (strat==='top5') tickers = tickers.slice(0,5);
+
+    // Fetch all in parallel
+    const all = [...tickers,'SPY','QQQ'];
+    const results = await Promise.allSettled(all.map(t => polyAggs(t, start, end)));
+    const dm = {};
+    all.forEach((t,i) => { if (results[i].status==='fulfilled') dm[t] = results[i].value; });
+
+    if (!dm['SPY']) throw new Error('SPY data unavailable. Try a different date range.');
+
+    const len    = dm['SPY'].length;
+    const labels = dm['SPY'].map(d => new Date(d.t).toLocaleDateString('en-US',{month:'short',year:'2-digit'}));
+
+    function normD(arr) { const b=arr[0].c; return arr.map(d=>((d.c-b)/b)*100); }
+
+    const spyRet  = normD(dm['SPY']);
+    const qqqRet  = dm['QQQ'] ? normD(dm['QQQ']) : [];
+    const valid   = tickers.filter(t=>dm[t]);
+    const stockS  = valid.map(t=>normD(dm[t]));
+    const portRet = Array.from({length:len},(_,i)=>
+      stockS.reduce((s,arr)=>s+(arr[Math.min(i,arr.length-1)]||0),0) / (stockS.length||1)
+    );
+
+    const portVals = portRet.map(r=>cap*(1+r/100));
+    const final    = portVals[len-1];
+    const gain     = final - cap;
+
+    // Max drawdown
+    let peak=cap, mdd=0;
+    portVals.forEach(v=>{ if(v>peak)peak=v; const d=(peak-v)/peak*100; if(d>mdd)mdd=d; });
+
+    // Sharpe (annualised)
+    const daily  = portRet.map((r,i)=>i===0?0:portRet[i]-portRet[i-1]);
+    const mean   = daily.reduce((a,b)=>a+b,0)/daily.length;
+    const std    = Math.sqrt(daily.map(r=>(r-mean)**2).reduce((a,b)=>a+b,0)/daily.length)||1;
+    const sharpe = (mean/std)*Math.sqrt(252);
+
+    const pF=portRet[len-1], sF=spyRet[len-1], qF=dm['QQQ']?qqqRet[len-1]:0;
+
+    // Stats cards
+    document.getElementById('btStats').innerHTML = [
+      {lbl:'Final Value',  val:fUSD(final),    sub:`Started: ${fUSD(cap)}`},
+      {lbl:'Total Return', val:fPct(pF),       sub:`S&P: ${fPct(sF)}`, cls:pF>=0?'up':'down'},
+      {lbl:'Alpha vs SPY', val:fPct(pF-sF),    sub:'Outperformance',   cls:(pF-sF)>=0?'up':'down'},
+      {lbl:'Max Drawdown', val:'-'+f2(mdd)+'%',sub:'Peak-to-trough',   cls:'down'},
+      {lbl:'Sharpe Ratio', val:f2(sharpe),     sub:'Risk-adj return',  cls:sharpe>=1?'up':sharpe>=0?'neu':'down'},
+      {lbl:'Net Gain',     val:sign(gain)+fUSD(gain), sub:`${valid.length} stocks`, cls:gain>=0?'up':'down'},
+    ].map(c=>`<div class="bt-stat"><div class="bt-lbl">${c.lbl}</div><div class="bt-val ${c.cls||''}">${c.val}</div><div class="bt-sub">${c.sub}</div></div>`).join('');
+
+    // Chart
+    const btCtx = document.getElementById('btChart').getContext('2d');
+    if (btChartObj) btChartObj.destroy();
+    btChartObj = new Chart(btCtx,{
+      type:'line',
+      data:{labels,datasets:[
+        {label:'Portfolio',data:portRet,borderColor:'#00d4ff',borderWidth:2.5,pointRadius:0,tension:.3,fill:{target:'origin',above:'rgba(0,212,255,.07)'}},
+        {label:'SPY',      data:spyRet, borderColor:'#fbbf24',borderWidth:1.5,pointRadius:0,tension:.3,borderDash:[5,3]},
+        {label:'QQQ',      data:qqqRet, borderColor:'#a78bfa',borderWidth:1.5,pointRadius:0,tension:.3,borderDash:[5,3]},
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{labels:{color:'#6b85a0',font:{family:'JetBrains Mono',size:8}}},
+          tooltip:{backgroundColor:'#0c1118',borderColor:'#1e2a38',borderWidth:1,bodyFont:{family:'JetBrains Mono',size:9},
+            callbacks:{label:c=>`  ${c.dataset.label}: ${c.parsed.y>=0?'+':''}${c.parsed.y.toFixed(2)}%`}}},
+        scales:{x:{ticks:{color:'#4a6580',font:{family:'JetBrains Mono',size:8},maxTicksLimit:9},grid:{display:false}},
+                y:{ticks:{color:'#4a6580',font:{family:'JetBrains Mono',size:8},callback:v=>(v>=0?'+':'')+v.toFixed(1)+'%'},grid:{color:'rgba(30,42,56,.7)'}}}}
+    });
+
+    // Per-stock table
+    const spyTR = sF, qqqTR = qF;
+    document.getElementById('btTbl').innerHTML = valid.map(t=>{
+      const d=dm[t]; const sp=d[0].c, ep=d[d.length-1].c;
+      const ret=((ep-sp)/sp)*100;
+      return `<tr>
+        <td><div class="tkr">${t}</div></td>
+        <td>${fUSD(sp)}</td><td>${fUSD(ep)}</td>
+        <td class="${ret>=0?'up':'down'}">${fPct(ret)}</td>
+        <td><span class="chip ${(ret-spyTR)>=0?'b':'l'}">${(ret-spyTR)>=0?'▲':'▼'} ${Math.abs(ret-spyTR).toFixed(1)}%</span></td>
+        <td><span class="chip ${(ret-qqqTR)>=0?'b':'l'}">${(ret-qqqTR)>=0?'▲':'▼'} ${Math.abs(ret-qqqTR).toFixed(1)}%</span></td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('btOut').style.display = 'block';
+    toast('Backtest complete ✓','ok');
+  } catch(e) {
+    err.textContent = '⚠ ' + e.message;
+    toast('Backtest failed','err');
+  }
+  btn.disabled = false; btn.textContent = '▶ Run';
+}
+
+// ═══════════════════════════════════════════
+// DCA PLANNER
+// ═══════════════════════════════════════════
+function calcDCA() {
+  const init   = parseFloat(document.getElementById('dcaInit').value)    || 878.59;
+  const mo     = parseFloat(document.getElementById('dcaMo').value)      || 140;
+  const rate   = parseFloat(document.getElementById('dcaRate').value)/100|| .10;
+  const yrs    = parseInt(document.getElementById('dcaYrs').value)       || 10;
+  const target = parseFloat(document.getElementById('dcaTarget').value)  || 1000000;
+  const tUSD   = target / USDTHB;
+  const mr     = rate / 12;
+
+  function project(r, y) {
+    const mr2 = r/12; let v = init;
+    for (let m=0;m<y*12;m++) v = v*(1+mr2)+mo;
+    return v;
+  }
+
+  const scenarios = [
+    {lbl:'Bear Case 7%', rate:.07, cls:'down'},
+    {lbl:'Base Case 10%',rate:.10, cls:'up'},
+    {lbl:'Bull Case 15%',rate:.15, cls:'up'},
+  ];
+  document.getElementById('dcaScen').innerHTML = scenarios.map(s=>{
+    const v = project(s.rate, yrs)*USDTHB;
+    const hit = v >= target;
+    return `<div class="scen">
+      <div class="scen-lbl">${s.lbl}</div>
+      <div class="scen-val ${s.cls}">${fTHB(v)}</div>
+      <div class="scen-sub">${hit ? '✅ Hits target!' : '❌ Short: ' + fTHB(target-v)}</div>
+    </div>`;
+  }).join('');
+
+  // Build year table
+  const rows = [];
+  let v = init;
+  for (let y=1;y<=yrs;y++) {
+    for (let m=0;m<12;m++) v = v*(1+mr)+mo;
+    rows.push({ y, contrib: init + mo*12*y, interest: v-(init+mo*12*y), usd:v, thb:v*USDTHB });
+  }
+
+  const labels   = rows.map(r=>'Yr '+r.y);
+  const totals   = rows.map(r=>r.thb);
+  const contribs = rows.map(r=>r.contrib*USDTHB);
+  const tLine    = rows.map(()=>target);
+
+  const dCtx = document.getElementById('dcaChart').getContext('2d');
+  if (dcaChartObj) dcaChartObj.destroy();
+  dcaChartObj = new Chart(dCtx,{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Portfolio',  data:totals,  borderColor:'#00d4ff',backgroundColor:'rgba(0,212,255,.08)',borderWidth:2.5,fill:true,tension:.4,pointRadius:4,pointBackgroundColor:'#00d4ff'},
+      {label:'Contributions',data:contribs,borderColor:'#6b85a0',borderWidth:1.5,borderDash:[4,3],fill:false,tension:.4,pointRadius:0},
+      {label:'Target',     data:tLine,   borderColor:'#f59e0b',borderWidth:1.5,borderDash:[8,4],fill:false,pointRadius:0},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#6b85a0',font:{family:'JetBrains Mono',size:8}}},
+        tooltip:{backgroundColor:'#0c1118',borderColor:'#1e2a38',borderWidth:1,
+          titleFont:{family:'JetBrains Mono',size:8},bodyFont:{family:'JetBrains Mono',size:9},
+          callbacks:{label:c=>`  ${c.dataset.label}: ${fTHB(c.parsed.y)}`}}},
+      scales:{
+        x:{ticks:{color:'#4a6580',font:{family:'JetBrains Mono',size:8}},grid:{display:false}},
+        y:{ticks:{color:'#4a6580',font:{family:'JetBrains Mono',size:8},callback:v=>'฿'+Math.round(v/1000)+'K'},grid:{color:'rgba(30,42,56,.7)'}}
+      }}
+  });
+
+  document.getElementById('dcaTbl').innerHTML = rows.map(r=>{
+    const diff = r.thb - target;
+    return `<tr>
+      <td>${r.y}</td>
+      <td>${fUSD(r.contrib)}</td>
+      <td class="up">+${fUSD(Math.max(0,r.interest))}</td>
+      <td style="font-weight:700">${fUSD(r.usd)}</td>
+      <td style="font-weight:700">${fTHB(r.thb)}</td>
+      <td class="${diff>=0?'up':'down'}">${diff>=0?'✅ +':'❌ '}${fTHB(Math.abs(diff))}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('dcaOut').style.display = 'block';
+  toast('DCA projection ready ✓','ok');
+}
+
+// ═══════════════════════════════════════════
+// ASSET MANAGER
+// ═══════════════════════════════════════════
+function renderAssets() {
+  const total = portfolio.reduce((s,h)=>s+h.c*h.q,0);
+  document.getElementById('assetTbl').innerHTML = portfolio.map((h,i)=>{
+    const w = total>0 ? (h.c*h.q/total*100).toFixed(1) : '—';
+    return `<tr>
+      <td><div class="tkr">${h.t}</div><div class="sn">${h.n||''}</div></td>
+      <td>${h.q%1===0?h.q:h.q.toFixed(4)}</td>
+      <td>${fUSD(h.c)}</td>
+      <td>${fUSD(h.c*h.q)}</td>
+      <td>${w}%</td>
+      <td><button class="btn btn-d" onclick="removeAsset('${h.t}')">✕</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:10px;">No positions</td></tr>';
+}
+
+function addAsset() {
+  const t=document.getElementById('aT').value.trim().toUpperCase();
+  const n=document.getElementById('aN').value.trim()||t;
+  const q=parseFloat(document.getElementById('aS').value);
+  const c=parseFloat(document.getElementById('aC').value);
+  const err=document.getElementById('assetErr');
+  if(!t){err.textContent='Enter ticker.';return;}
+  if(isNaN(q)||q<=0){err.textContent='Enter valid shares.';return;}
+  if(isNaN(c)||c<=0){err.textContent='Enter valid cost.';return;}
+  err.textContent='';
+  portfolio=portfolio.filter(h=>h.t!==t);
+  portfolio.unshift({t,n,q,c});
+  save(); renderAssets();
+  ['aT','aN','aS','aC'].forEach(id=>document.getElementById(id).value='');
+  toast(t+' added ✓','ok');
+}
+
+function removeAsset(ticker) {
+  if(!confirm('Remove '+ticker+'?')) return;
+  portfolio=portfolio.filter(h=>h.t!==ticker);
+  save(); renderAssets(); renderAssets();
+  // also update dashboard
+  loadDashboard();
+  toast(ticker+' removed');
+}
+
+function clearAll() {
+  if(!confirm('Clear ALL positions?')) return;
+  portfolio=[]; save(); renderAssets();
+}
+
+// ═══════════════════════════════════════════
+// SYNC
+// ═══════════════════════════════════════════
+function genURL() {
+  const url = location.origin+location.pathname+'?p='+btoa(JSON.stringify(portfolio));
+  document.getElementById('syncURL').textContent = url;
+  document.getElementById('urlBox').style.display = 'block';
+  return url;
+}
+function copyURL() {
+  const url = genURL();
+  navigator.clipboard.writeText(url).then(()=>toast('Copied ✓','ok')).catch(()=>toast('Copy manually from the box above'));
+}
+function shareURL() {
+  const url = genURL();
+  if(navigator.share) navigator.share({title:'My Portfolio',url}).catch(()=>{});
+  else copyURL();
+}
+function showQR() {
+  const url = genURL();
+  document.getElementById('qrBox').style.display = 'block';
+  document.getElementById('qrBox').innerHTML =
+    `<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}"
+     style="border-radius:8px;width:150px;height:150px;display:block;" alt="QR">`;
+}
+function importURL() {
+  const raw = document.getElementById('importInput').value.trim();
+  const err = document.getElementById('importErr');
+  try {
+    let enc = raw.includes('?p=') ? new URL(raw).searchParams.get('p') : raw;
+    const d = JSON.parse(atob(enc));
+    if(!Array.isArray(d)||!d.length) throw new Error('Empty');
+    portfolio=d; save(); renderAssets();
+    err.textContent=''; toast('Imported '+d.length+' positions ✓','ok');
+  } catch(e) { err.textContent='Invalid URL or data: '+e.message; }
+}
+
+// ═══════════════════════════════════════════
+// REFRESH ALL
+// ═══════════════════════════════════════════
+function refreshAll() { loadDashboard(); loadChart(); }
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+function initDates() {
+  const t=new Date(), f=new Date(Date.now()-730*86400000);
+  document.getElementById('btEnd').value   = t.toISOString().split('T')[0];
+  document.getElementById('btStart').value = f.toISOString().split('T')[0];
+}
+
+initDates();
+renderAssets();
+loadDashboard();   // Finnhub live quotes
+loadChart();       // Polygon historical
+</script>
+
+</body>
+</html>
