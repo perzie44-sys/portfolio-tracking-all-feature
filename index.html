@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Tracker Pro - Ultra</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        /* Unified Theme from Index.html.txt */
+        :root {
+            --bg: #07090f;
+            --surface: #0c101b;
+            --border: #1a2535;
+            --border2: #252f44;
+            --accent: #38bdf8;
+            --green: #34d399;
+            --red: #f87171;
+            --sp: #fbbf24;
+            --text: #e2e8f0;
+            --muted: #4b608a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; padding: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; }
+
+        /* Navigation Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .tab-btn { background: none; border: none; color: var(--muted); padding: 10px 20px; cursor: pointer; font-weight: 600; border-radius: 6px; }
+        .tab-btn.active { background: var(--border); color: var(--accent); }
+
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* Shared Components */
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
+        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        input { background: var(--bg); border: 1px solid var(--border2); color: var(--text); padding: 12px; border-radius: 8px; font-size: 14px; }
+        button.primary { background: var(--accent); color: var(--bg); border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+
+        /* Table Styling */
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { text-align: left; color: var(--muted); padding: 12px 8px; border-bottom: 1px solid var(--border); text-transform: uppercase; }
+        td { padding: 16px 8px; border-bottom: 1px solid var(--border); }
+        .pos { color: var(--green); } .neg { color: var(--red); }
+
+        /* DCA Result Bar */
+        .res-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 20px; }
+        .res-item { background: var(--bg); padding: 15px; border-radius: 10px; border: 1px solid var(--border); }
+        .res-label { font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 5px; }
+        .res-val { font-size: 18px; font-weight: 700; color: var(--accent); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('holdings')">Portfolio Holdings</button>
+            <button class="tab-btn" onclick="showTab('dca')">DCA Calculator</button>
+            <button class="tab-btn" onclick="showTab('backtest')">Historical Backtest</button>
+        </div>
+
+        <div id="holdings" class="view active">
+            <div class="card">
+                <h2>Asset Manager</h2>
+                <div class="grid-inputs" style="margin-top: 20px;">
+                    <input type="text" id="t-ticker" placeholder="Ticker">
+                    <input type="number" id="t-shares" placeholder="Shares">
+                    <input type="number" id="t-cost" placeholder="Avg Cost">
+                    <button class="primary" onclick="addAsset()">Add Asset</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Asset</th>
+                            <th>Shares</th>
+                            <th>Avg Cost</th>
+                            <th>Live Price</th>
+                            <th>Value</th>
+                            <th>P/L $</th>
+                            <th>P/L%</th>
+                            <th>VS SPY</th>
+                        </tr>
+                    </thead>
+                    <tbody id="holdingsTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="dca" class="view">
+            <div class="card">
+                <h2>DCA & Compound Interest Projection</h2>
+                <p style="color: var(--muted); font-size: 13px; margin-bottom: 20px;">Project future wealth based on recurring investments.</p>
+                <div class="grid-inputs">
+                    <div>
+                        <label class="res-label">Initial Balance ($)</label>
+                        <input type="number" id="dca-init" value="5000" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label class="res-label">Monthly Contribution ($)</label>
+                        <input type="number" id="dca-monthly" value="500" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label class="res-label">Expected Return (%)</label>
+                        <input type="number" id="dca-return" value="10" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label class="res-label">Time Horizon (Years)</label>
+                        <input type="number" id="dca-years" value="10" style="width: 100%;">
+                    </div>
+                </div>
+                <button class="primary" onclick="calculateDCA()">Calculate Projection</button>
+                
+                <div class="res-grid">
+                    <div class="res-item">
+                        <div class="res-label">Total Invested</div>
+                        <div id="res-total-inv" class="res-val">$0.00</div>
+                    </div>
+                    <div class="res-item">
+                        <div class="res-label">Interest Earned</div>
+                        <div id="res-interest" class="res-val">$0.00</div>
+                    </div>
+                    <div class="res-item">
+                        <div class="res-label">Ending Balance</div>
+                        <div id="res-end" class="res-val" style="color: var(--green);">$0.00</div>
+                    </div>
+                </div>
+                <canvas id="dcaChart" height="100" style="margin-top: 30px;"></canvas>
+            </div>
+        </div>
+
+        <div id="backtest" class="view">
+            <div class="card">
+                <h2>Portfolio Backtest Simulation</h2>
+                <p style="color: var(--muted); font-size: 13px; margin-bottom: 20px;">Compare your current portfolio mix against historical benchmarks.</p>
+                <canvas id="backtestChart" height="120"></canvas>
+                <div style="margin-top: 20px; font-size: 12px; color: var(--muted);">
+                    *Simulation uses historical volatility patterns to estimate performance vs S&P 500 (SPY).
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initial Portfolio Data from screenshots
+        let portfolio = [
+            { ticker: 'GOOGL', shares: 0.406, avgCost: 212.45, live: 388.64 },
+            { ticker: 'NVDA', shares: 0.549, avgCost: 140.39, live: 219.44 },
+            { ticker: 'TSM', shares: 0.1198, avgCost: 259.12, live: 404.54 }
+        ];
+
+        const SPY_PERF = 12.5;
+
+        // Tab Navigation
+        function showTab(id) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.target.classList.add('active');
+            if(id === 'dca') calculateDCA();
+            if(id === 'backtest') renderBacktest();
+        }
+
+        // Holdings Logic
+        function renderHoldings() {
+            const tbody = document.getElementById('holdingsTable');
+            tbody.innerHTML = '';
+            portfolio.forEach(p => {
+                const value = p.shares * p.live;
+                const plCash = (p.live - p.avgCost) * p.shares;
+                const plPct = ((p.live - p.avgCost) / p.avgCost) * 100;
+                const vsSpy = plPct - SPY_PERF;
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td><b style="color:var(--accent)">${p.ticker}</b></td>
+                        <td>${p.shares}</td>
+                        <td>$${p.avgCost.toFixed(2)}</td>
+                        <td>$${p.live.toFixed(2)}</td>
+                        <td>$${value.toFixed(2)}</td>
+                        <td class="${plCash >= 0 ? 'pos' : 'neg'}">$${plCash.toFixed(2)}</td>
+                        <td class="${plPct >= 0 ? 'pos' : 'neg'}">${plPct.toFixed(2)}%</td>
+                        <td class="${vsSpy >= 0 ? 'pos' : 'neg'}">${vsSpy.toFixed(2)}%</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function addAsset() {
+            const t = document.getElementById('t-ticker').value;
+            const s = parseFloat(document.getElementById('t-shares').value);
+            const c = parseFloat(document.getElementById('t-cost').value);
+            if(t && s && c) {
+                portfolio.push({ ticker: t.toUpperCase(), shares: s, avgCost: c, live: c });
+                renderHoldings();
+            }
+        }
+
+        // DCA Logic (Compound Interest)
+        let dcaChartObj = null;
+        function calculateDCA() {
+            const init = parseFloat(document.getElementById('dca-init').value);
+            const monthly = parseFloat(document
